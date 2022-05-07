@@ -1,0 +1,62 @@
+-- microwave.smv
+MODULE main
+VAR
+	event: {pressStartStop, openDoor, closeDoor, timesUp};
+	cookerState: {on,off};
+	doorState: {open,closed};
+	startTimer: boolean;
+	stopTimer: boolean;
+	pauseTimer: boolean;
+	startCooking: boolean;
+	stopCooking: boolean;
+	-- Do not remove or modify the code above
+	-- Declare additional variables here
+ASSIGN
+	-- Describe your transition rules here
+
+	-- Do not remove or modify the code below
+	init(cookerState) := off;
+	next(cookerState) := case
+		startCooking: on;
+		stopCooking: off;
+		cookerState=off &event=openDoor: off;
+		cookerState=on &event=openDoor: off;
+		cookerState=off &event=closeDoor: off;
+		cookerState=on &event=closeDoor: on;
+		cookerState=off & event=pressStartStop : on;
+		cookerState=on & event=pressStartStop :  off;
+		cookerState=on & event=timesUp : off;
+		cookerState=off & event=timesUp : off;
+		TRUE: cookerState;
+		
+	esac;
+
+	init(doorState) := closed;
+	next(doorState) := case
+		event=openDoor: open;
+		event=closeDoor: closed;
+		TRUE: doorState;
+		doorState=open & event=pressStartStop : open;
+		doorState=open : open;
+		doorState=closed : closed;
+		doorState=open & event=openDoor : open;
+		doorState=open & event=closeDoor : closed;
+		doorState=closed & event=openDoor : open;
+		doorState=closed & event=closeDoor : closed;
+		doorState=closed & event=timesUp : closed;
+		doorState=closed & event=timesUp : closed;
+	esac;
+	
+	startTimer := (doorState=closed) & (event=pressStartStop);
+	stopTimer := (doorState=closed) & (event=timesUp);
+	pauseTimer := (doorState=open) & (cookerState=on);
+	startCooking := (event=pressStartStop) & (doorState=closed) & (cookerState=off);
+	stopCooking := (event=pressStartStop) | (event=timesUp) & (doorState=closed) & (cookerState=on);
+
+	
+	
+
+LTLSPEC !F(doorState=open & cookerState=on)
+LTLSPEC G(cookerState=on & event=timesUp -> X cookerState=off)
+LTLSPEC G(cookerState=on & event=pressStartStop -> X cookerState=off)
+LTLSPEC G(cookerState=off & doorState=closed & event=pressStartStop -> X cookerState=on)
